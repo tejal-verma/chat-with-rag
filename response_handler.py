@@ -32,6 +32,12 @@ class ResponseHandler:
         self.vector_store = vector_store
         self.validator = validator
 
+        # Create RAG chains once during initialization
+        logger.info("Initializing RAG chains...")
+        self.retriever_chain = create_context_retriever_chain(self.vector_store)
+        self.rag_chain = create_conversational_rag_chain(self.retriever_chain)
+        logger.info("RAG chains initialized successfully")
+
     def generate_response(self, user_input: str, chat_history: list) -> Tuple[str, Dict]:
         """
         Generate a validated response to user input.
@@ -49,13 +55,9 @@ class ResponseHandler:
         Returns:
             Tuple of (answer, validation_result)
         """
-        # Create RAG chains
-        retriever_chain = create_context_retriever_chain(self.vector_store)
-        rag_chain = create_conversational_rag_chain(retriever_chain)
-
-        # Generate initial response
+        # Generate initial response using pre-initialized chains
         logger.info(f"Generating response for: {user_input}")
-        response = rag_chain.invoke({"chat_history": chat_history, "input": user_input})
+        response = self.rag_chain.invoke({"chat_history": chat_history, "input": user_input})
 
         answer = response["answer"]
         context_docs = response.get("context", [])
